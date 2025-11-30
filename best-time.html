@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopp-Spiel Final</title>
+    <style>
+        /* CSS-Code beginnt hier */
+        :root {
+            --primary-color: #00ff99; /* Standard-Akzentfarbe (Grün) */
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --stop-color: #ff4d4d;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .game-container {
+            position: relative;
+            text-align: center;
+            padding: 30px;
+            border-radius: 20px;
+            background-color: var(--card-bg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 450px;
+        }
+
+        /* Obere Icon-Buttons Container */
+        .icon-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        #helpButton {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+        }
+        .icon-buttons button, #helpButton {
+            background: none; border: none; color: var(--text-color);
+            font-size: 1.5em; cursor: pointer; opacity: 0.7;
+        }
+        .icon-buttons button:hover, #helpButton:hover { opacity: 1; }
+
+        h1 { margin-top: 0; color: var(--primary-color); }
+
+        #display {
+            font-size: 3.5em; margin: 20px auto; color: var(--primary-color);
+            border: 5px solid var(--primary-color); border-radius: 50%;
+            width: 180px; height: 180px; display: flex; justify-content: center;
+            align-items: center; font-weight: bold;
+        }
+
+        #actionButton {
+            padding: 15px 30px; font-size: 1.2em; cursor: pointer;
+            background-color: var(--primary-color); border: none;
+            border-radius: 50px; color: var(--card-bg); width: 100%;
+            box-sizing: border-box;
+        }
+
+        #message { margin-top: 15px; font-size: 1em; color: var(--stop-color); min-height: 1.2em; }
+
+        .slider-container {
+            display: none; width: 100%; background-color: #444; border-radius: 50px;
+            margin-top: 20px; overflow: hidden; position: relative; height: 50px;
+            cursor: grab; user-select: none;
+        }
+        .slider-label {
+            position: absolute; top: 0; left: 0; right: 0; text-align: center;
+            line-height: 50px; color: #ccc; pointer-events: none; font-size: 0.9em;
+        }
+        .slider-button {
+            width: 50px; height: 50px; background-color: var(--stop-color);
+            border-radius: 50%; position: absolute; top: 0; display: flex;
+            align-items: center; justify-content: center; color: white;
+            font-weight: 900; font-size: 1.5em; transition: transform 0.1s linear;
+            cursor: inherit; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .slider-container.dir-right .slider-button { left: 0; }
+        .slider-container.dir-left .slider-button { right: 0; }
+
+        /* --- Modal CSS --- */
+        .modal {
+            display: none; position: fixed; z-index: 1; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background-color: var(--card-bg); padding: 20px; border-radius: 20px; width: 80%; max-width: 400px;
+        }
+        .close-button {
+            color: var(--text-color); float: right; font-size: 28px; font-weight: bold; cursor: pointer;
+        }
+        .setting-option { margin-bottom: 15px; }
+        .color-picker-container button {
+            width: 30px; height: 30px; border-radius: 80%; border: 2px solid transparent; margin: 5px; cursor: pointer;
+        }
+        .color-picker-container button.active {
+            border-color: white; box-shadow: 0 0 0 2px var(--card-bg);
+        }
+        #highscoreList { list-style-type: none; padding: 0; }
+        #highscoreList li {
+            padding: 10px; background-color: #2c2c2c; margin-bottom: 5px;
+            border-radius: 20px; display: flex; justify-content: space-between;
+        }
+
+        /* Styling für die neuen Richtungs-Buttons */
+        .direction-buttons button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 2px solid #555;
+            background-color: #333;
+            color: var(--text-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .direction-buttons button.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--card-bg);
+            font-weight: bold;
+        }
+        /* CSS-Code endet hier */
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <button id="helpButton" aria-label="Spielanleitung">?</button>
+        <div class="icon-buttons">
+            <button id="scoreButton" aria-label="Highscore anzeigen">🏆</button>
+            <button id="settingsButton" aria-label="Einstellungen öffnen">⚙️</button>
+        </div>
+        
+        <h1>Stopp-Spiel</h1>
+        <div id="display">0.00s</div>
+        
+        <button id="actionButton">Start</button>
+
+        <div class="slider-container dir-right" id="sliderContainer">
+            <div class="slider-button" id="sliderButton">→</div>
+            <span class="slider-label" id="sliderLabel"></span>
+        </div>
+        
+        <p id="message"></p>
+    </div>
+
+    <!-- Modal Einstellungen -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeSettingsModal">&times;</span>
+            <h2>Einstellungen</h2>
+            
+            <!-- Hier sind die neuen Buttons für die Richtung -->
+            <div class="setting-option">
+                <label>Schieber-Richtung:</label>
+                <div class="direction-buttons">
+                    <button id="dirLeftButton" data-direction="left">← Links</button>
+                    <button id="dirRightButton" data-direction="right">Rechts →</button>
+                </div>
+            </div>
+
+            <div class="setting-option">
+                <label>Akzentfarbe:</label>
+                <div class="color-picker-container">
+                    <button class="color-swatch" data-color="#00ff99" style="background-color: #00ff99;"></button>
+                    <button class="color-swatch" data-color="#4da6ff" style="background-color: #4da6ff;"></button>
+                    <button class="color-swatch" data-color="#ff4d4d" style="background-color: #ff4d4d;"></button>
+                    <button class="color-swatch" data-color="#9966ff" style="background-color: #9966ff;"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Highscore und Hilfe bleiben gleich -->
+    <div id="scoreModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeScoreModal">&times;</span>
+            <h2>Highscores (Top 5)</h2>
+            <ul id="highscoreList"></ul>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeHelpModal">&times;</span>
+            <h2>Spielanleitung</h2>
+            <p><strong>Ziel:</strong> Stoppen Sie die Zeit so schnell wie möglich bei einem perfekten Wert (theoretisch 0.00s).</p>
+        </div>
+    </div>
+
+
+    <!-- JavaScript-Code beginnt hier -->
+    <script>
+        // DOM Elemente
+        const display = document.getElementById('display');
+        const actionButton = document.getElementById('actionButton');
+        const messageArea = document.getElementById('message');
+        const sliderContainer = document.getElementById('sliderContainer');
+        const sliderButton = document.getElementById('sliderButton');
+        const sliderLabel = document.getElementById('sliderLabel');
+        const rootStyle = document.documentElement.style;
+
+        // Modal Elemente & Buttons
+        const settingsModal = document.getElementById('settingsModal');
+        const scoreModal = document.getElementById('scoreModal');
+        const helpModal = document.getElementById('helpModal');
+        const settingsButton = document.getElementById('settingsButton');
+        const scoreButton = document.getElementById('scoreButton');
+        const helpButton = document.getElementById('helpButton');
+        const colorSwatches = document.querySelectorAll('.color-swatch');
+        const highscoreList = document.getElementById('highscoreList');
+        const dirLeftButton = document.getElementById('dirLeftButton');
+        const dirRightButton = document.getElementById('dirRightButton');
+
+
+        let startTime;
+        let timerInterval;
+        let isRunning = false;
+        let isDragging = false;
+        let startClientX;
+        const SLIDER_WIDTH = 50;
+        let currentDirection = 'right'; // State Variable für die Richtung
+
+        // --- EINSTELLUNGEN LOGIK ---
+        function applySettings(color, direction) {
+            currentDirection = direction; // State aktualisieren
+            rootStyle.setProperty('--primary-color', color);
+            sliderContainer.classList.remove('dir-left', 'dir-right');
+            sliderContainer.classList.add(`dir-${direction}`);
+
+            if (direction === 'right') {
+                sliderButton.textContent = '→';
+                sliderLabel.textContent = 'Zum Neustart nach rechts schieben';
+                dirRightButton.classList.add('active');
+                dirLeftButton.classList.remove('active');
+            } else {
+                sliderButton.textContent = '←';
+                sliderLabel.textContent = 'Zum Neustart nach links schieben';
+                dirLeftButton.classList.add('active');
+                dirRightButton.classList.remove('active');
+            }
+
+            colorSwatches.forEach(swatch => {
+                swatch.classList.remove('active');
+                if (swatch.getAttribute('data-color') === color) swatch.classList.add('active');
+            });
+        }
+        applySettings('#00ff99', 'right');
+
+        // Modal Handler
+        settingsButton.addEventListener('click', () => settingsModal.style.display = 'flex');
+        scoreButton.addEventListener('click', () => { displayHighscores(); scoreModal.style.display = 'flex'; });
+        helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
+        
+        document.querySelectorAll('.close-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.closest('.modal').style.display = 'none';
+            });
+        });
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) event.target.style.display = 'none';
+        });
+        
+        // Event Listener für die neuen Richtungs-Buttons
+        dirLeftButton.addEventListener('click', () => applySettings(rootStyle.getPropertyValue('--primary-color').trim(), 'left'));
+        dirRightButton.addEventListener('click', () => applySettings(rootStyle.getPropertyValue('--primary-color').trim(), 'right'));
+
+        colorSwatches.forEach(swatch => swatch.addEventListener('click', (e) => applySettings(e.target.getAttribute('data-color'), currentDirection)));
+
+
+        // --- HIGHSCORE LOGIK ---
+        function getHighscores() {
+            const scores = JSON.parse(localStorage.getItem('stoppSpielScores')) || [];
+            return scores.sort((a, b) => a - b).slice(0, 5);
+        }
+        function saveScore(score) {
+            const scores = getHighscores();
+            scores.push(score);
+            scores.sort((a, b) => a - b);
+            localStorage.setItem('stoppSpielScores', JSON.stringify(scores.slice(0, 5)));
+        }
+        function displayHighscores() {
+            const scores = getHighscores();
+            highscoreList.innerHTML = '';
+            if (scores.length === 0) { highscoreList.innerHTML = '<li>Noch keine Highscores vorhanden.</li>'; return; }
+            scores.forEach((score, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>#${index + 1}</span> <span>${score.toFixed(3)}s</span>`;
+                highscoreList.appendChild(li);
+            });
+        }
+
+        // --- SPIEL LOGIK ---
+        actionButton.addEventListener('click', () => {
+            if (!isRunning) {
+                messageArea.textContent = 'Läuft... Drücken Sie erneut, um zu stoppen.';
+                actionButton.textContent = 'Stop';
+                actionButton.style.display = 'block';
+                sliderContainer.style.display = 'none';
+                startTime = Date.now();
+                timerInterval = setInterval(updateDisplay, 10);
+                isRunning = true;
+            } else {
+                clearInterval(timerInterval);
+                const stopTime = Date.now();
+                const reactionTime = (stopTime - startTime) / 1000;
+                display.textContent = `${reactionTime.toFixed(3)}s`;
+                messageArea.textContent = `Ihre Zeit: ${reactionTime.toFixed(3)}s!`;
+                saveScore(reactionTime);
+                actionButton.style.display = 'none';
+                sliderContainer.style.display = 'block';
+                isRunning = false;
+            }
+        });
+
+        // --- LOGIK FÜR DEN SCHIEBER ---
+        sliderButton.addEventListener('mousedown', startDrag);
+        sliderButton.addEventListener('touchstart', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+
+        function startDrag(e) {
+            if (sliderContainer.style.display === 'block') {
+                isDragging = true;
+                startClientX = e.clientX || e.touches.clientX;
+                sliderButton.style.transition = 'none';
+            }
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault(); 
+            const clientX = e.clientX || e.touches.clientX;
+            const containerWidth = sliderContainer.offsetWidth;
+            const maxDragDistance = containerWidth - SLIDER_WIDTH;
+            // Nutze die aktuelle direction Variable
+            const direction = currentDirection; 
+            let deltaX = clientX - startClientX;
+            let transformX = 0;
+
+            if (direction === 'right') {
+                if (deltaX < 0) deltaX = 0;
+                if (deltaX > maxDragDistance) deltaX = maxDragDistance;
+                transformX = deltaX;
+            } else { // direction left
+                let currentPos = maxDragDistance + deltaX; 
+                if (currentPos < 0) currentPos = 0;
+                if (currentPos > maxDragDistance) currentPos = maxDragDistance;
+                transformX = currentPos - maxDragDistance; 
+            }
+            sliderButton.style.transform = `translateX(${transformX}px)`;
+
+            if (Math.abs(transformX) >= maxDragDistance - 5) resetGame();
+        }
+
+        function stopDrag() {
+            if (isDragging) {
+                isDragging = false;
+                sliderButton.style.transition = 'transform 0.3s ease-out';
+                sliderButton.style.transform = `translateX(0px)`;
+            }
+        }
+
+        function resetGame() {
+            actionButton.textContent = 'Start';
+            actionButton.style.display = 'block';
+            sliderContainer.style.display = 'none';
+            display.textContent = '0.00s';
+            messageArea.textContent = '';
+            sliderButton.style.transition = 'none';
+            sliderButton.style.transform = `translateX(0px)`;
+        }
+
+        function updateDisplay() {
+            const currentTime = Date.now();
+            const elapsedTime = (currentTime - startTime) / 1000;
+            display.textContent = `${elapsedTime.toFixed(2)}s`;
+        }
+    </script>
+    <!-- JavaScript-Code endet hier -->
+
+</body>
+</html>
