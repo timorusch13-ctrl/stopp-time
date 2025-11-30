@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stopp-Spiel Final</title>
+    <title>Stopp-Spiel Final V6 (Touch Fix)</title>
     <style>
         /* CSS-Code beginnt hier */
         :root {
@@ -23,6 +23,9 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            /* Verhindert das standardmäßige Ziehen von Bildern auf Desktop-Browsern, 
+               was Dragging-Events stören könnte */
+            user-select: none; 
         }
 
         .game-container {
@@ -36,18 +39,11 @@
             max-width: 450px;
         }
 
-        /* Obere Icon-Buttons Container */
         .icon-buttons {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            display: flex;
-            gap: 10px;
+            position: absolute; top: 15px; right: 15px; display: flex; gap: 10px;
         }
         #helpButton {
-            position: absolute;
-            top: 15px;
-            left: 15px;
+            position: absolute; top: 15px; left: 15px;
         }
         .icon-buttons button, #helpButton {
             background: none; border: none; color: var(--text-color);
@@ -76,19 +72,25 @@
         .slider-container {
             display: none; width: 100%; background-color: #444; border-radius: 50px;
             margin-top: 20px; overflow: hidden; position: relative; height: 50px;
-            cursor: grab; user-select: none;
+            cursor: grab; /* Ändere cursor hier auf grab für bessere Usability */
+            user-select: none;
         }
+        
         .slider-label {
             position: absolute; top: 0; left: 0; right: 0; text-align: center;
             line-height: 50px; color: #ccc; pointer-events: none; font-size: 0.9em;
         }
+
         .slider-button {
             width: 50px; height: 50px; background-color: var(--stop-color);
             border-radius: 50%; position: absolute; top: 0; display: flex;
             align-items: center; justify-content: center; color: white;
             font-weight: 900; font-size: 1.5em; transition: transform 0.1s linear;
-            cursor: inherit; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            /* Wichtig für Touch: */
+            touch-action: none; 
         }
+
         .slider-container.dir-right .slider-button { left: 0; }
         .slider-container.dir-left .slider-button { right: 0; }
 
@@ -99,40 +101,22 @@
             justify-content: center; align-items: center;
         }
         .modal-content {
-            background-color: var(--card-bg); padding: 20px; border-radius: 20px; width: 80%; max-width: 400px;
+            background-color: var(--card-bg); padding: 20px; border-radius: 10px; width: 80%; max-width: 400px;
         }
-        .close-button {
-            color: var(--text-color); float: right; font-size: 28px; font-weight: bold; cursor: pointer;
-        }
+        .close-button { color: var(--text-color); float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .setting-option { margin-bottom: 15px; }
-        .color-picker-container button {
-            width: 30px; height: 30px; border-radius: 80%; border: 2px solid transparent; margin: 5px; cursor: pointer;
-        }
-        .color-picker-container button.active {
-            border-color: white; box-shadow: 0 0 0 2px var(--card-bg);
-        }
+        .color-picker-container button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; margin: 5px; cursor: pointer; }
+        .color-picker-container button.active { border-color: white; box-shadow: 0 0 0 2px var(--card-bg); }
         #highscoreList { list-style-type: none; padding: 0; }
-        #highscoreList li {
-            padding: 10px; background-color: #2c2c2c; margin-bottom: 5px;
-            border-radius: 20px; display: flex; justify-content: space-between;
-        }
-
-        /* Styling für die neuen Richtungs-Buttons */
+        #highscoreList li { padding: 10px; background-color: #2c2c2c; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; }
         .direction-buttons button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: 2px solid #555;
-            background-color: #333;
-            color: var(--text-color);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            padding: 10px 20px; margin: 5px; border: 2px solid #555;
+            background-color: #333; color: var(--text-color); border-radius: 20px;
+            cursor: pointer; transition: background-color 0.3s;
         }
         .direction-buttons button.active {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: var(--card-bg);
-            font-weight: bold;
+            background-color: var(--primary-color); border-color: var(--primary-color);
+            color: var(--card-bg); font-weight: bold;
         }
         /* CSS-Code endet hier */
     </style>
@@ -159,13 +143,11 @@
         <p id="message"></p>
     </div>
 
-    <!-- Modal Einstellungen -->
+    <!-- Modals bleiben unverändert -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeSettingsModal">&times;</span>
+            <span class="close-button">&times;</span>
             <h2>Einstellungen</h2>
-            
-            <!-- Hier sind die neuen Buttons für die Richtung -->
             <div class="setting-option">
                 <label>Schieber-Richtung:</label>
                 <div class="direction-buttons">
@@ -173,33 +155,36 @@
                     <button id="dirRightButton" data-direction="right">Rechts →</button>
                 </div>
             </div>
-
             <div class="setting-option">
                 <label>Akzentfarbe:</label>
                 <div class="color-picker-container">
-                    <button class="color-swatch" data-color="#00ff99" style="background-color: #00ff99;"></button>
-                    <button class="color-swatch" data-color="#4da6ff" style="background-color: #4da6ff;"></button>
-                    <button class="color-swatch" data-color="#ff4d4d" style="background-color: #ff4d4d;"></button>
-                    <button class="color-swatch" data-color="#9966ff" style="background-color: #9966ff;"></button>
+                    <button class="color-swatch" data-color="#00ff99"></button>
+                    <button class="color-swatch" data-color="#4da6ff"></button>
+                    <button class="color-swatch" data-color="#ff4d4d"></button>
+                    <button class="color-swatch" data-color="#9966ff"></button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Modal Highscore und Hilfe bleiben gleich -->
     <div id="scoreModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeScoreModal">&times;</span>
+            <span class="close-button">&times;</span>
             <h2>Highscores (Top 5)</h2>
             <ul id="highscoreList"></ul>
         </div>
     </div>
-
     <div id="helpModal" class="modal">
         <div class="modal-content">
-            <span class="close-button" id="closeHelpModal">&times;</span>
+            <span class="close-button">&times;</span>
             <h2>Spielanleitung</h2>
             <p><strong>Ziel:</strong> Stoppen Sie die Zeit so schnell wie möglich bei einem perfekten Wert (theoretisch 0.00s).</p>
+            <p><strong>So geht's:</strong></p>
+            <ol>
+                <li>Drücken Sie "Start".</li>
+                <li>Drücken Sie "Stop", sobald Sie bereit sind.</li>
+                <li>Ihre Zeit wird gemessen.</li>
+                <li>Verwenden Sie den Schieberegler, um ein neues Spiel zu starten.</li>
+            </ol>
         </div>
     </div>
 
@@ -214,8 +199,6 @@
         const sliderButton = document.getElementById('sliderButton');
         const sliderLabel = document.getElementById('sliderLabel');
         const rootStyle = document.documentElement.style;
-
-        // Modal Elemente & Buttons
         const settingsModal = document.getElementById('settingsModal');
         const scoreModal = document.getElementById('scoreModal');
         const helpModal = document.getElementById('helpModal');
@@ -227,22 +210,20 @@
         const dirLeftButton = document.getElementById('dirLeftButton');
         const dirRightButton = document.getElementById('dirRightButton');
 
-
         let startTime;
         let timerInterval;
         let isRunning = false;
         let isDragging = false;
         let startClientX;
         const SLIDER_WIDTH = 50;
-        let currentDirection = 'right'; // State Variable für die Richtung
+        let currentDirection = 'right';
 
         // --- EINSTELLUNGEN LOGIK ---
         function applySettings(color, direction) {
-            currentDirection = direction; // State aktualisieren
+            currentDirection = direction;
             rootStyle.setProperty('--primary-color', color);
             sliderContainer.classList.remove('dir-left', 'dir-right');
             sliderContainer.classList.add(`dir-${direction}`);
-
             if (direction === 'right') {
                 sliderButton.textContent = '→';
                 sliderLabel.textContent = 'Zum Neustart nach rechts schieben';
@@ -254,7 +235,6 @@
                 dirLeftButton.classList.add('active');
                 dirRightButton.classList.remove('active');
             }
-
             colorSwatches.forEach(swatch => {
                 swatch.classList.remove('active');
                 if (swatch.getAttribute('data-color') === color) swatch.classList.add('active');
@@ -266,7 +246,6 @@
         settingsButton.addEventListener('click', () => settingsModal.style.display = 'flex');
         scoreButton.addEventListener('click', () => { displayHighscores(); scoreModal.style.display = 'flex'; });
         helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
-        
         document.querySelectorAll('.close-button').forEach(button => {
             button.addEventListener('click', (e) => {
                 e.target.closest('.modal').style.display = 'none';
@@ -275,13 +254,9 @@
         window.addEventListener('click', (event) => {
             if (event.target.classList.contains('modal')) event.target.style.display = 'none';
         });
-        
-        // Event Listener für die neuen Richtungs-Buttons
         dirLeftButton.addEventListener('click', () => applySettings(rootStyle.getPropertyValue('--primary-color').trim(), 'left'));
         dirRightButton.addEventListener('click', () => applySettings(rootStyle.getPropertyValue('--primary-color').trim(), 'right'));
-
         colorSwatches.forEach(swatch => swatch.addEventListener('click', (e) => applySettings(e.target.getAttribute('data-color'), currentDirection)));
-
 
         // --- HIGHSCORE LOGIK ---
         function getHighscores() {
@@ -328,30 +303,40 @@
             }
         });
 
-        // --- LOGIK FÜR DEN SCHIEBER ---
+        // --- LOGIK FÜR DEN SCHIEBER (inklusive Touch Fixes) ---
         sliderButton.addEventListener('mousedown', startDrag);
         sliderButton.addEventListener('touchstart', startDrag);
         document.addEventListener('mousemove', drag);
         document.addEventListener('touchmove', drag);
         document.addEventListener('mouseup', stopDrag);
         document.addEventListener('touchend', stopDrag);
+        document.addEventListener('touchcancel', stopDrag); // Wichtig bei abgebrochenem Touch
+
+        function getClientX(e) {
+            if (e.touches && e.touches.length > 0) {
+                return e.touches[0].clientX;
+            }
+            return e.clientX;
+        }
 
         function startDrag(e) {
             if (sliderContainer.style.display === 'block') {
+                e.preventDefault(); // Verhindert Standardaktionen beim Start des Touchs
                 isDragging = true;
-                startClientX = e.clientX || e.touches.clientX;
+                startClientX = getClientX(e);
                 sliderButton.style.transition = 'none';
             }
         }
 
         function drag(e) {
             if (!isDragging) return;
-            e.preventDefault(); 
-            const clientX = e.clientX || e.touches.clientX;
+            e.preventDefault(); // Verhindert Scrollen während des Ziehens
+
+            const clientX = getClientX(e);
             const containerWidth = sliderContainer.offsetWidth;
             const maxDragDistance = containerWidth - SLIDER_WIDTH;
-            // Nutze die aktuelle direction Variable
-            const direction = currentDirection; 
+            const direction = currentDirection;
+            
             let deltaX = clientX - startClientX;
             let transformX = 0;
 
@@ -367,7 +352,9 @@
             }
             sliderButton.style.transform = `translateX(${transformX}px)`;
 
-            if (Math.abs(transformX) >= maxDragDistance - 5) resetGame();
+            if (Math.abs(transformX) >= maxDragDistance - 5) {
+                resetGame();
+            }
         }
 
         function stopDrag() {
