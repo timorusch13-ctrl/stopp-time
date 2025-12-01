@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stopp-Spiel Final V6 (Touch Fix)</title>
+    <title>Stopp-Spiel Final</title>
     <style>
         /* CSS-Code beginnt hier */
         :root {
@@ -23,9 +23,6 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            /* Verhindert das standardmäßige Ziehen von Bildern auf Desktop-Browsern, 
-               was Dragging-Events stören könnte */
-            user-select: none; 
         }
 
         .game-container {
@@ -39,11 +36,18 @@
             max-width: 450px;
         }
 
+        /* Obere Icon-Buttons Container */
         .icon-buttons {
-            position: absolute; top: 15px; right: 15px; display: flex; gap: 10px;
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
         }
         #helpButton {
-            position: absolute; top: 15px; left: 15px;
+            position: absolute;
+            top: 15px;
+            left: 15px;
         }
         .icon-buttons button, #helpButton {
             background: none; border: none; color: var(--text-color);
@@ -54,71 +58,130 @@
         h1 { margin-top: 0; color: var(--primary-color); }
 
         #display {
-            font-size: 3.5em; margin: 20px auto; color: var(--primary-color);
-            border: 5px solid var(--primary-color); border-radius: 50%;
-            width: 180px; height: 180px; display: flex; justify-content: center;
-            align-items: center; font-weight: bold;
+            height: 100px; 
+            margin: 30px auto; 
+            border: 5px solid var(--primary-color); 
+            border-radius: 50px; 
+            display: flex; 
+            justify-content: center;
+            align-items: center; 
+            font-weight: bold;
+            color: var(--primary-color);
+            
+            font-size: 3.5em; 
+            text-align: center; 
+            white-space: nowrap; 
+            padding: 0 15px; 
+            box-sizing: border-box;
+            overflow: hidden; 
+            
+            transition: width 0.4s ease, font-size 0.3s ease; 
         }
+
+        .precision-1 { width: 150px; font-size: 3.5em; } 
+        .precision-2 { width: 180px; font-size: 3.5em; } 
+        .precision-3 { width: 220px; font-size: 3.5em; } 
+        .precision-4 { width: 280px; font-size: 2.1em; } 
+        .precision-5 { width: 340px; font-size: 1.7em; } 
+
 
         #actionButton {
             padding: 15px 30px; font-size: 1.2em; cursor: pointer;
             background-color: var(--primary-color); border: none;
             border-radius: 50px; color: var(--card-bg); width: 100%;
             box-sizing: border-box;
+            margin-top: 20px; 
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        #actionButton.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none; 
+            position: absolute; 
         }
 
-        #message { margin-top: 15px; font-size: 1em; color: var(--stop-color); min-height: 1.2em; }
+        #message { margin-top: 25px; font-size: 1em; color: var(--stop-color); min-height: 1.2em; }
 
         .slider-container {
-            display: none; width: 100%; background-color: #444; border-radius: 50px;
-            margin-top: 20px; overflow: hidden; position: relative; height: 50px;
-            cursor: grab; /* Ändere cursor hier auf grab für bessere Usability */
-            user-select: none;
+            display: none; 
+            width: 100%; background-color: #444; border-radius: 50px;
+            margin-top: 20px; 
+            overflow: hidden; position: relative; height: 50px;
+            cursor: grab; user-select: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .slider-container.visible {
+            opacity: 1;
+            display: block; 
         }
         
         .slider-label {
             position: absolute; top: 0; left: 0; right: 0; text-align: center;
             line-height: 50px; color: #ccc; pointer-events: none; font-size: 0.9em;
+            z-index: 0; 
         }
-
         .slider-button {
-            width: 50px; height: 50px; background-color: var(--stop-color);
-            border-radius: 50%; position: absolute; top: 0; display: flex;
-            align-items: center; justify-content: center; color: white;
-            font-weight: 900; font-size: 1.5em; transition: transform 0.1s linear;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            /* Wichtig für Touch: */
-            touch-action: none; 
+            width: 50px; height: 50px; background-color: var(--primary-color); 
+            border-radius: 50%; position: absolute; top: 0; 
+            display: flex;
+            align-items: center; justify-content: center; color: var(--card-bg);
+            font-weight: 900; font-size: 1.5em; 
+            cursor: inherit; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 1; 
+            transition: transform 0s !important; 
         }
-
+        
         .slider-container.dir-right .slider-button { left: 0; }
         .slider-container.dir-left .slider-button { right: 0; }
 
         /* --- Modal CSS --- */
         .modal {
             display: none; position: fixed; z-index: 1; left: 0; top: 0;
-            width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);
+            width: 100%; height: 100%; 
+            /* Halb durchsichtiger schwarzer Hintergrund */
+            background-color: rgba(0, 0, 0, 0.6); 
             justify-content: center; align-items: center;
         }
         .modal-content {
-            background-color: var(--card-bg); padding: 20px; border-radius: 10px; width: 80%; max-width: 400px;
+            /* Hintergrund des inneren Menüs ist wieder blickdicht */
+            background-color: var(--card-bg); 
+            padding: 20px; border-radius: 20px; width: 80%; max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
-        .close-button { color: var(--text-color); float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-button {
+            color: var(--text-color); float: right; font-size: 28px; font-weight: bold; cursor: pointer;
+        }
         .setting-option { margin-bottom: 15px; }
-        .color-picker-container button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; margin: 5px; cursor: pointer; }
-        .color-picker-container button.active { border-color: white; box-shadow: 0 0 0 2px var(--card-bg); }
+        .color-picker-container button {
+            width: 30px; height: 30px; border-radius: 80%; border: 2px solid transparent; margin: 5px; cursor: pointer;
+        }
+        .color-picker-container button.active {
+            border-color: white; box-shadow: 0 0 0 2px var(--card-bg);
+        }
         #highscoreList { list-style-type: none; padding: 0; }
-        #highscoreList li { padding: 10px; background-color: #2c2c2c; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; }
-        .direction-buttons button {
-            padding: 10px 20px; margin: 5px; border: 2px solid #555;
-            background-color: #333; color: var(--text-color); border-radius: 20px;
-            cursor: pointer; transition: background-color 0.3s;
+        #highscoreList li {
+            padding: 10px; background-color: #2c2c2c; margin-bottom: 5px;
+            border-radius: 20px; display: flex; justify-content: space-between;
         }
-        .direction-buttons button.active {
-            background-color: var(--primary-color); border-color: var(--primary-color);
-            color: var(--card-bg); font-weight: bold;
+
+        .direction-buttons button, .precision-buttons button {
+            padding: 10px 15px;
+            margin: 5px 2px;
+            border: 2px solid #555;
+            background-color: #333;
+            color: var(--text-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-        /* CSS-Code endet hier */
+        .direction-buttons button.active, .precision-buttons button.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--card-bg);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -131,257 +194,314 @@
         </div>
         
         <h1>Stopp-Spiel</h1>
-        <div id="display">0.00s</div>
+        <div id="display" class="precision-2">0.00s</div>
         
         <button id="actionButton">Start</button>
 
-        <div class="slider-container dir-right" id="sliderContainer">
+        <div class="slider-container" id="sliderContainer">
             <div class="slider-button" id="sliderButton">→</div>
-            <span class="slider-label" id="sliderLabel"></span>
+            <span class="slider-label" id="sliderLabel">Zum Neustart schieben</span>
         </div>
         
         <p id="message"></p>
     </div>
 
-    <!-- Modals bleiben unverändert -->
+    <!-- Modal Einstellungen -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
+            <span class="close-button" id="closeSettingsModal">&times;</span>
             <h2>Einstellungen</h2>
+            
             <div class="setting-option">
-                <label>Schieber-Richtung:</label>
-                <div class="direction-buttons">
-                    <button id="dirLeftButton" data-direction="left">← Links</button>
-                    <button id="dirRightButton" data-direction="right">Rechts →</button>
+                <label>Nachkommastellen:</label>
+                <div class="precision-buttons">
+                    <button data-precision="1">1</button>
+                    <button data-precision="2" class="active">2</button>
+                    <button data-precision="3">3</button>
+                    <button data-precision="4">4</button>
+                    <button data-precision="5">5</button>
                 </div>
             </div>
+
             <div class="setting-option">
                 <label>Akzentfarbe:</label>
                 <div class="color-picker-container">
-                    <button class="color-swatch" data-color="#00ff99"></button>
-                    <button class="color-swatch" data-color="#4da6ff"></button>
-                    <button class="color-swatch" data-color="#ff4d4d"></button>
-                    <button class="color-swatch" data-color="#9966ff"></button>
+                    <button data-color="#00ff99" style="background-color: #00ff99;" class="active"></button>
+                    <button data-color="#4da6ff" style="background-color: #4da6ff;"></button> <!-- Blau -->
+                    <button data-color="#ff4d4d" style="background-color: #ff4d4d;"></button> <!-- Rot -->
+                    <button data-color="#ffcc00" style="background-color: #ffcc00;"></button> <!-- Gelb -->
+                </div>
+            </div>
+
+            <div class="setting-option">
+                <label>Schieberichtung Neustart:</label>
+                <div class="direction-buttons">
+                    <button data-direction="right" class="active">Rechts →</button>
+                    <button data-direction="left">← Links</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Modal Highscores -->
     <div id="scoreModal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Highscores (Top 5)</h2>
-            <ul id="highscoreList"></ul>
+            <span class="close-button" id="closeScoreModal">&times;</span>
+            <h2>Highscores</h2>
+            <ul id="highscoreList">
+                <!-- Highscores werden hier dynamisch hinzugefügt -->
+            </ul>
         </div>
     </div>
+
+    <!-- Modal Hilfe -->
     <div id="helpModal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
+            <span class="close-button" id="closeHelpModal">&times;</span>
             <h2>Spielanleitung</h2>
-            <p><strong>Ziel:</strong> Stoppen Sie die Zeit so schnell wie möglich bei einem perfekten Wert (theoretisch 0.00s).</p>
-            <p><strong>So geht's:</strong></p>
-            <ol>
-                <li>Drücken Sie "Start".</li>
-                <li>Drücken Sie "Stop", sobald Sie bereit sind.</li>
-                <li>Ihre Zeit wird gemessen.</li>
-                <li>Verwenden Sie den Schieberegler, um ein neues Spiel zu starten.</li>
-            </ol>
+            <p><strong>Ziel:</strong> Stoppe den Timer so nah wie möglich an einer ganzen Sekunde (z.B. 5.00s, 10.00s, etc.).</p>
+            <p><strong>Punkte:</strong> Je genauer du bist, desto mehr Punkte gibt es.</p>
+            <p><strong>Einstellungen:</strong> Du kannst die Anzahl der Nachkommastellen und die Farbe anpassen.</p>
         </div>
     </div>
 
-
-    <!-- JavaScript-Code beginnt hier -->
     <script>
-        // DOM Elemente
+        // JavaScript-Code beginnt hier
         const display = document.getElementById('display');
         const actionButton = document.getElementById('actionButton');
-        const messageArea = document.getElementById('message');
         const sliderContainer = document.getElementById('sliderContainer');
         const sliderButton = document.getElementById('sliderButton');
         const sliderLabel = document.getElementById('sliderLabel');
-        const rootStyle = document.documentElement.style;
-        const settingsModal = document.getElementById('settingsModal');
-        const scoreModal = document.getElementById('scoreModal');
-        const helpModal = document.getElementById('helpModal');
-        const settingsButton = document.getElementById('settingsButton');
-        const scoreButton = document.getElementById('scoreButton');
-        const helpButton = document.getElementById('helpButton');
-        const colorSwatches = document.querySelectorAll('.color-swatch');
-        const highscoreList = document.getElementById('highscoreList');
-        const dirLeftButton = document.getElementById('dirLeftButton');
-        const dirRightButton = document.getElementById('dirRightButton');
+        const messagePara = document.getElementById('message');
+        const rootStyles = document.documentElement.style;
 
         let startTime;
-        let timerInterval;
+        let animationFrameId;
         let isRunning = false;
-        let isDragging = false;
-        let startClientX;
-        const SLIDER_WIDTH = 50;
-        let currentDirection = 'right';
-
-        // --- EINSTELLUNGEN LOGIK ---
-        function applySettings(color, direction) {
-            currentDirection = direction;
-            rootStyle.setProperty('--primary-color', color);
-            sliderContainer.classList.remove('dir-left', 'dir-right');
-            sliderContainer.classList.add(`dir-${direction}`);
-            if (direction === 'right') {
-                sliderButton.textContent = '→';
-                sliderLabel.textContent = 'Zum Neustart nach rechts schieben';
-                dirRightButton.classList.add('active');
-                dirLeftButton.classList.remove('active');
+        let settings = {
+            precision: 2, 
+            color: '#00ff99',
+            direction: 'right'
+        };
+        let highscores = JSON.parse(localStorage.getItem('stoppspielHighscores')) || [];
+        
+        // --- Timer Logik ---
+        function toggleGame() {
+            if (isRunning) {
+                stopGame();
             } else {
-                sliderButton.textContent = '←';
-                sliderLabel.textContent = 'Zum Neustart nach links schieben';
-                dirLeftButton.classList.add('active');
-                dirRightButton.classList.remove('active');
-            }
-            colorSwatches.forEach(swatch => {
-                swatch.classList.remove('active');
-                if (swatch.getAttribute('data-color') === color) swatch.classList.add('active');
-            });
-        }
-        applySettings('#00ff99', 'right');
-
-        // Modal Handler
-        settingsButton.addEventListener('click', () => settingsModal.style.display = 'flex');
-        scoreButton.addEventListener('click', () => { displayHighscores(); scoreModal.style.display = 'flex'; });
-        helpButton.addEventListener('click', () => helpModal.style.display = 'flex');
-        document.querySelectorAll('.close-button').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.target.closest('.modal').style.display = 'none';
-            });
-        });
-        window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) event.target.style.display = 'none';
-        });
-        dirLeftButton.addEventListener('click', () => applySettings(rootStyle.getPropertyValue('--primary-color').trim(), 'left'));
-        dirRightButton.addEventListener('click', () => applySettings(rootStyle.getPropertyValue('--primary-color').trim(), 'right'));
-        colorSwatches.forEach(swatch => swatch.addEventListener('click', (e) => applySettings(e.target.getAttribute('data-color'), currentDirection)));
-
-        // --- HIGHSCORE LOGIK ---
-        function getHighscores() {
-            const scores = JSON.parse(localStorage.getItem('stoppSpielScores')) || [];
-            return scores.sort((a, b) => a - b).slice(0, 5);
-        }
-        function saveScore(score) {
-            const scores = getHighscores();
-            scores.push(score);
-            scores.sort((a, b) => a - b);
-            localStorage.setItem('stoppSpielScores', JSON.stringify(scores.slice(0, 5)));
-        }
-        function displayHighscores() {
-            const scores = getHighscores();
-            highscoreList.innerHTML = '';
-            if (scores.length === 0) { highscoreList.innerHTML = '<li>Noch keine Highscores vorhanden.</li>'; return; }
-            scores.forEach((score, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `<span>#${index + 1}</span> <span>${score.toFixed(3)}s</span>`;
-                highscoreList.appendChild(li);
-            });
-        }
-
-        // --- SPIEL LOGIK ---
-        actionButton.addEventListener('click', () => {
-            if (!isRunning) {
-                messageArea.textContent = 'Läuft... Drücken Sie erneut, um zu stoppen.';
-                actionButton.textContent = 'Stop';
-                actionButton.style.display = 'block';
-                sliderContainer.style.display = 'none';
-                startTime = Date.now();
-                timerInterval = setInterval(updateDisplay, 10);
-                isRunning = true;
-            } else {
-                clearInterval(timerInterval);
-                const stopTime = Date.now();
-                const reactionTime = (stopTime - startTime) / 1000;
-                display.textContent = `${reactionTime.toFixed(3)}s`;
-                messageArea.textContent = `Ihre Zeit: ${reactionTime.toFixed(3)}s!`;
-                saveScore(reactionTime);
-                actionButton.style.display = 'none';
-                sliderContainer.style.display = 'block';
-                isRunning = false;
-            }
-        });
-
-        // --- LOGIK FÜR DEN SCHIEBER (inklusive Touch Fixes) ---
-        sliderButton.addEventListener('mousedown', startDrag);
-        sliderButton.addEventListener('touchstart', startDrag);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('touchmove', drag);
-        document.addEventListener('mouseup', stopDrag);
-        document.addEventListener('touchend', stopDrag);
-        document.addEventListener('touchcancel', stopDrag); // Wichtig bei abgebrochenem Touch
-
-        function getClientX(e) {
-            if (e.touches && e.touches.length > 0) {
-                return e.touches[0].clientX;
-            }
-            return e.clientX;
-        }
-
-        function startDrag(e) {
-            if (sliderContainer.style.display === 'block') {
-                e.preventDefault(); // Verhindert Standardaktionen beim Start des Touchs
-                isDragging = true;
-                startClientX = getClientX(e);
-                sliderButton.style.transition = 'none';
+                startGame();
             }
         }
 
-        function drag(e) {
-            if (!isDragging) return;
-            e.preventDefault(); // Verhindert Scrollen während des Ziehens
+        function startGame() {
+            if (isRunning) return;
+            isRunning = true;
+            startTime = performance.now();
+            actionButton.textContent = 'Stop';
+            messagePara.textContent = '';
+            animationFrameId = requestAnimationFrame(updateDisplayLoop);
+        }
 
-            const clientX = getClientX(e);
-            const containerWidth = sliderContainer.offsetWidth;
-            const maxDragDistance = containerWidth - SLIDER_WIDTH;
-            const direction = currentDirection;
+        function stopGame() {
+            if (!isRunning) return;
+            isRunning = false;
+            cancelAnimationFrame(animationFrameId);
             
-            let deltaX = clientX - startClientX;
-            let transformX = 0;
+            const elapsedTime = performance.now() - startTime;
+            const formattedTime = formatTime(elapsedTime, settings.precision);
+            display.textContent = formattedTime;
 
-            if (direction === 'right') {
-                if (deltaX < 0) deltaX = 0;
-                if (deltaX > maxDragDistance) deltaX = maxDragDistance;
-                transformX = deltaX;
-            } else { // direction left
-                let currentPos = maxDragDistance + deltaX; 
-                if (currentPos < 0) currentPos = 0;
-                if (currentPos > maxDragDistance) currentPos = maxDragDistance;
-                transformX = currentPos - maxDragDistance; 
+            calculateScore(elapsedTime);
+            showRestartSlider();
+        }
+
+        function updateDisplayLoop(timestamp) {
+            const elapsedTime = timestamp - startTime;
+            display.textContent = formatTime(elapsedTime, settings.precision);
+            animationFrameId = requestAnimationFrame(updateDisplayLoop);
+        }
+
+        function formatTime(ms, precision) {
+            const seconds = ms / 1000;
+            return seconds.toFixed(precision) + 's';
+        }
+
+        function calculateScore(elapsedTime) {
+            const seconds = elapsedTime / 1000;
+            const decimalPart = seconds % 1; 
+            const distanceFromTarget = Math.min(decimalPart, 1 - decimalPart);
+            let score = 0;
+            let message = '';
+
+            if (distanceFromTarget < 0.005) { 
+                score = 500;
+                message = "Perfekt! 🎉 500 Punkte!";
+            } else if (distanceFromTarget < 0.01) { 
+                score = 200;
+                message = "Sehr gut! 200 Punkte!";
+            } else if (distanceFromTarget < 0.05) { 
+                score = 50;
+                message = "Gut gemacht! 50 Punkte!";
+            } else {
+                score = 0;
+                message = "Versuch's nochmal!";
             }
-            sliderButton.style.transform = `translateX(${transformX}px)`;
 
-            if (Math.abs(transformX) >= maxDragDistance - 5) {
-                resetGame();
+            messagePara.textContent = message;
+            if (score > 0) {
+                saveHighscore(seconds.toFixed(settings.precision), score);
             }
         }
 
-        function stopDrag() {
+        // --- Einstellungs- und UI Logik ---
+
+        function applySettings() {
+            rootStyles.setProperty('--primary-color', settings.color);
+            sliderContainer.classList.remove('dir-left', 'dir-right');
+            sliderContainer.classList.add(`dir-${settings.direction}`);
+            sliderButton.textContent = settings.direction === 'right' ? '→' : '←';
+            sliderLabel.textContent = settings.direction === 'right' ? 'Zum Neustart schieben' : '← Zum Neustart schieben';
+
+            display.classList.remove('precision-1', 'precision-2', 'precision-3', 'precision-4', 'precision-5');
+            display.classList.add(`precision-${settings.precision}`);
+            
+            if (!isRunning) {
+                 display.textContent = formatTime(0, settings.precision);
+            }
+        }
+
+        // Slider Logik
+        let isDragging = false;
+        const startDragging = (e) => {
+            if (!isRunning) {
+                isDragging = true;
+                sliderButton.style.transition = 'none'; 
+                document.body.style.cursor = 'grabbing';
+            }
+        };
+
+        const stopDragging = (e) => {
             if (isDragging) {
                 isDragging = false;
-                sliderButton.style.transition = 'transform 0.3s ease-out';
-                sliderButton.style.transform = `translateX(0px)`;
+                sliderButton.style.transition = ''; 
+                document.body.style.cursor = 'default';
+                const containerRect = sliderContainer.getBoundingClientRect();
+                const buttonRect = sliderButton.getBoundingClientRect();
+                const threshold = containerRect.width * 0.8;
+                let movedDistance;
+
+                if (settings.direction === 'right') {
+                    movedDistance = buttonRect.left - containerRect.left;
+                    if (movedDistance >= threshold) {
+                        resetGame();
+                    } else {
+                        sliderButton.style.transform = 'translateX(0px)';
+                    }
+                } else {
+                    movedDistance = containerRect.right - buttonRect.right;
+                    if (movedDistance >= threshold) {
+                        resetGame();
+                    } else {
+                        sliderButton.style.transform = 'translateX(0px)';
+                    }
+                }
             }
+        };
+
+        const drag = (e) => {
+            if (!isDragging) return;
+
+            e.preventDefault();
+            const clientX = e.touches ? e.touches.clientX : e.clientX;
+            const containerRect = sliderContainer.getBoundingClientRect();
+            const buttonRect = sliderButton.getBoundingClientRect();
+            
+            let newPos;
+
+            if (settings.direction === 'right') {
+                 const maxMove = containerRect.width - buttonRect.width;
+                 newPos = clientX - containerRect.left - (buttonRect.width / 2);
+                 newPos = Math.max(0, Math.min(maxMove, newPos));
+                 sliderButton.style.transform = `translateX(${newPos}px)`;
+            } else {
+                const maxMove = containerRect.width - buttonRect.width;
+                const relativeX = clientX - containerRect.left; 
+                const buttonCenterX = relativeX - (buttonRect.width / 2);
+                
+                newPos = maxMove - buttonCenterX;
+                newPos = Math.max(0, Math.min(maxMove, newPos));
+
+                const translateXValue = -(maxMove - newPos);
+                sliderButton.style.transform = `translateX(${translateXValue}px)`;
+            }
+        };
+        
+        function showRestartSlider() {
+            actionButton.classList.add('hidden');
+            sliderContainer.classList.add('visible');
+            sliderButton.style.transform = 'translateX(0px)';
         }
 
         function resetGame() {
+            isRunning = false;
+            display.textContent = formatTime(0, settings.precision);
             actionButton.textContent = 'Start';
-            actionButton.style.display = 'block';
-            sliderContainer.style.display = 'none';
-            display.textContent = '0.00s';
-            messageArea.textContent = '';
-            sliderButton.style.transition = 'none';
-            sliderButton.style.transform = `translateX(0px)`;
+            actionButton.classList.remove('hidden');
+            sliderContainer.classList.remove('visible');
+            messagePara.textContent = '';
         }
 
-        function updateDisplay() {
-            const currentTime = Date.now();
-            const elapsedTime = (currentTime - startTime) / 1000;
-            display.textContent = `${elapsedTime.toFixed(2)}s`;
-        }
-    </script>
-    <!-- JavaScript-Code endet hier -->
+        // Modal Logik
+        const settingsModal = document.getElementById('settingsModal');
+        const scoreModal = document.getElementById('scoreModal');
+        const helpModal = document.getElementById('helpModal');
+        
+        document.getElementById('settingsButton').onclick = () => { settingsModal.style.display = 'flex'; };
+        document.getElementById('closeSettingsModal').onclick = () => { settingsModal.style.display = 'none'; };
+        document.getElementById('scoreButton').onclick = () => { 
+            displayHighscores();
+            scoreModal.style.display = 'flex'; 
+        };
+        document.getElementById('closeScoreModal').onclick = () => { scoreModal.style.display = 'none'; };
+        document.getElementById('helpButton').onclick = () => { helpModal.style.display = 'flex'; };
+        document.getElementById('closeHelpModal').onclick = () => { helpModal.style.display = 'none'; };
 
-</body>
-</html>
+        // Event Listener für Einstellungen speichern
+        document.querySelector('.precision-buttons').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                settings.precision = parseInt(e.target.dataset.precision);
+                document.querySelectorAll('.precision-buttons button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                applySettings(); 
+            }
+        });
+
+        document.querySelector('.color-picker-container').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                settings.color = e.target.dataset.color;
+                document.querySelectorAll('.color-picker-container button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                applySettings();
+            }
+        });
+
+         document.querySelector('.direction-buttons').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                settings.direction = e.target.dataset.direction;
+                document.querySelectorAll('.direction-buttons button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                applySettings();
+            }
+        });
+
+        // Highscore Logik
+        function saveHighscore(time, score) {
+            highscores.push({ time, score, date: new Date().toLocaleDateString() });
+            highscores.sort((a, b) => b.score - a.score || parseFloat(a.time) - parseFloat(b.time));
+            highscores = highscores.slice(0, 10); 
+            localStorage.setItem('stoppspielHighscores', JSON.stringify(highscores));
+        }
+
+        function displayHighscores() {
+            const list = document.getElement
