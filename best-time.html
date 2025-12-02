@@ -266,7 +266,9 @@
     </div>
 
     <script>
-        // JavaScript-Code beginnt hier
+        // JavaScript-Code beginnt hier (Universalisiert für Maus- und Touch-Geräte)
+
+        // DOM-Elemente
         const display = document.getElementById('display');
         const actionButton = document.getElementById('actionButton');
         const sliderContainer = document.getElementById('sliderContainer');
@@ -274,6 +276,19 @@
         const sliderLabel = document.getElementById('sliderLabel');
         const messagePara = document.getElementById('message');
         const rootStyles = document.documentElement.style;
+        const highscoreList = document.getElementById('highscoreList');
+        
+        // Modals und Buttons
+        const settingsModal = document.getElementById('settingsModal');
+        const scoreModal = document.getElementById('scoreModal');
+        const helpModal = document.getElementById('helpModal');
+        const helpButton = document.getElementById('helpButton');
+        const scoreButton = document.getElementById('scoreButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const closeSettingsModal = document.getElementById('closeSettingsModal');
+        const closeScoreModal = document.getElementById('closeScoreModal');
+        const closeHelpModal = document.getElementById('closeHelpModal');
+
 
         let startTime;
         let animationFrameId;
@@ -287,11 +302,7 @@
         
         // --- Timer Logik ---
         function toggleGame() {
-            if (isRunning) {
-                stopGame();
-            } else {
-                startGame();
-            }
+            if (isRunning) { stopGame(); } else { startGame(); }
         }
 
         function startGame() {
@@ -300,6 +311,7 @@
             startTime = performance.now();
             actionButton.textContent = 'Stop';
             messagePara.textContent = '';
+            hideRestartSlider(); 
             animationFrameId = requestAnimationFrame(updateDisplayLoop);
         }
 
@@ -334,27 +346,16 @@
             let score = 0;
             let message = '';
 
-            if (distanceFromTarget < 0.005) { 
-                score = 500;
-                message = "Perfekt! 🎉 500 Punkte!";
-            } else if (distanceFromTarget < 0.01) { 
-                score = 200;
-                message = "Sehr gut! 200 Punkte!";
-            } else if (distanceFromTarget < 0.05) { 
-                score = 50;
-                message = "Gut gemacht! 50 Punkte!";
-            } else {
-                score = 0;
-                message = "Versuch's nochmal!";
-            }
+            if (distanceFromTarget < 0.005) { score = 500; message = "Perfekt! 🎉 500 Punkte!"; } 
+            else if (distanceFromTarget < 0.01) { score = 200; message = "Sehr gut! 200 Punkte!"; } 
+            else if (distanceFromTarget < 0.05) { score = 50; message = "Gut gemacht! 50 Punkte!"; } 
+            else { score = 0; message = "Versuch's nochmal!"; }
 
             messagePara.textContent = message;
             if (score > 0) {
                 saveHighscore(seconds.toFixed(settings.precision), score);
             }
         }
-
-        // --- Einstellungs- und UI Logik ---
 
         function applySettings() {
             rootStyles.setProperty('--primary-color', settings.color);
@@ -367,107 +368,139 @@
             display.classList.add(`precision-${settings.precision}`);
             
             if (!isRunning) {
-                 display.textContent = formatTime(0, settings.precision);
+                const currentDisplayedTime = parseFloat(display.textContent); 
+                display.textContent = formatTime(isNaN(currentDisplayedTime) ? 0 : currentDisplayedTime * 1000, settings.precision);
             }
         }
 
-        // Slider Logik
-        let isDragging = false;
-        const startDragging = (e) => {
-            if (!isRunning) {
-                isDragging = true;
-                sliderButton.style.transition = 'none'; 
-                document.body.style.cursor = 'grabbing';
-            }
-        };
-
-        const stopDragging = (e) => {
-            if (isDragging) {
-                isDragging = false;
-                sliderButton.style.transition = ''; 
-                document.body.style.cursor = 'default';
-                const containerRect = sliderContainer.getBoundingClientRect();
-                const buttonRect = sliderButton.getBoundingClientRect();
-                const threshold = containerRect.width * 0.8;
-                let movedDistance;
-
-                if (settings.direction === 'right') {
-                    movedDistance = buttonRect.left - containerRect.left;
-                    if (movedDistance >= threshold) {
-                        resetGame();
-                    } else {
-                        sliderButton.style.transform = 'translateX(0px)';
-                    }
-                } else {
-                    movedDistance = containerRect.right - buttonRect.right;
-                    if (movedDistance >= threshold) {
-                        resetGame();
-                    } else {
-                        sliderButton.style.transform = 'translateX(0px)';
-                    }
-                }
-            }
-        };
-
-        const drag = (e) => {
-            if (!isDragging) return;
-
-            e.preventDefault();
-            const clientX = e.touches ? e.touches.clientX : e.clientX;
-            const containerRect = sliderContainer.getBoundingClientRect();
-            const buttonRect = sliderButton.getBoundingClientRect();
-            
-            let newPos;
-
-            if (settings.direction === 'right') {
-                 const maxMove = containerRect.width - buttonRect.width;
-                 newPos = clientX - containerRect.left - (buttonRect.width / 2);
-                 newPos = Math.max(0, Math.min(maxMove, newPos));
-                 sliderButton.style.transform = `translateX(${newPos}px)`;
-            } else {
-                const maxMove = containerRect.width - buttonRect.width;
-                const relativeX = clientX - containerRect.left; 
-                const buttonCenterX = relativeX - (buttonRect.width / 2);
-                
-                newPos = maxMove - buttonCenterX;
-                newPos = Math.max(0, Math.min(maxMove, newPos));
-
-                const translateXValue = -(maxMove - newPos);
-                sliderButton.style.transform = `translateX(${translateXValue}px)`;
-            }
-        };
-        
         function showRestartSlider() {
             actionButton.classList.add('hidden');
             sliderContainer.classList.add('visible');
             sliderButton.style.transform = 'translateX(0px)';
         }
 
+        function hideRestartSlider() {
+            actionButton.classList.remove('hidden');
+            sliderContainer.classList.remove('visible');
+        }
+
         function resetGame() {
             isRunning = false;
             display.textContent = formatTime(0, settings.precision);
             actionButton.textContent = 'Start';
-            actionButton.classList.remove('hidden');
-            sliderContainer.classList.remove('visible');
+            hideRestartSlider();
             messagePara.textContent = '';
         }
 
-        // Modal Logik
-        const settingsModal = document.getElementById('settingsModal');
-        const scoreModal = document.getElementById('scoreModal');
-        const helpModal = document.getElementById('helpModal');
-        
-        document.getElementById('settingsButton').onclick = () => { settingsModal.style.display = 'flex'; };
-        document.getElementById('closeSettingsModal').onclick = () => { settingsModal.style.display = 'none'; };
-        document.getElementById('scoreButton').onclick = () => { 
-            displayHighscores();
-            scoreModal.style.display = 'flex'; 
-        };
-        document.getElementById('closeScoreModal').onclick = () => { scoreModal.style.display = 'none'; };
-        document.getElementById('helpButton').onclick = () => { helpModal.style.display = 'flex'; };
-        document.getElementById('closeHelpModal').onclick = () => { helpModal.style.display = 'none'; };
+        function saveHighscore(time, score) {
+            highscores.push({ time, score, date: new Date().toLocaleDateString() });
+            highscores.sort((a, b) => b.score - a.score || parseFloat(a.time) - parseFloat(b.time));
+            highscores = highscores.slice(0, 10); 
+            localStorage.setItem('stoppspielHighscores', JSON.stringify(highscores));
+        }
 
-        // Event Listener für Einstellungen speichern
+        function displayHighscores() {
+            const list = document.getElementById('highscoreList');
+            list.innerHTML = '';
+            highscores.forEach((scoreItem, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>#${index + 1} ${scoreItem.time}</span> <span>${scoreItem.score} Punkte</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        // --- WICHTIG: Universelle Slider/Drag-Logik für Touch und Maus ---
+
+        let isDragging = false;
+        let initialClientX; 
+        
+        function getClientX(e) {
+            return e.touches ? e.touches.clientX : e.clientX;
+        }
+
+        const startDragging = (e) => {
+            if (!isRunning) {
+                isDragging = true;
+                initialClientX = getClientX(e); 
+                sliderButton.style.transition = 'none'; 
+                document.body.style.cursor = 'grabbing';
+                e.preventDefault(); 
+                
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('mouseup', stopDragging);
+                document.addEventListener('touchmove', dragMove);
+                document.addEventListener('touchend', stopDragging);
+            }
+        };
+
+        const stopDragging = (e) => {
+            if (!isDragging) return;
+
+            isDragging = false;
+            sliderButton.style.transition = ''; 
+            document.body.style.cursor = 'default';
+
+            document.removeEventListener('mousemove', dragMove);
+            document.removeEventListener('mouseup', stopDragging);
+            document.removeEventListener('touchmove', dragMove);
+            document.removeEventListener('touchend', stopDragging);
+            
+            const containerRect = sliderContainer.getBoundingClientRect();
+            const buttonRect = sliderButton.getBoundingClientRect();
+            const threshold = containerRect.width * 0.8;
+            let movedDistance;
+
+            if (settings.direction === 'right') {
+                movedDistance = buttonRect.left - containerRect.left;
+                if (movedDistance >= threshold) {
+                    resetGame();
+                }
+            } else {
+                movedDistance = containerRect.right - buttonRect.right;
+                if (movedDistance >= threshold) {
+                    resetGame();
+                }
+            }
+            sliderButton.style.transform = 'translateX(0px)';
+        };
+
+        const dragMove = (e) => {
+            if (!isDragging) return;
+
+            e.preventDefault(); 
+
+            const clientX = getClientX(e);
+            const containerRect = sliderContainer.getBoundingClientRect();
+            const buttonRect = sliderButton.getBoundingClientRect();
+            const maxMove = containerRect.width - buttonRect.width;
+
+            let deltaX = clientX - initialClientX;
+            let newPos = deltaX;
+            
+            newPos = Math.max(0, Math.min(maxMove, newPos));
+            sliderButton.style.transform = `translateX(${newPos}px)`;
+        };
+
+
+        // --- Event Listener Zuweisungen ---
+
+        actionButton.addEventListener('click', toggleGame); 
+        sliderButton.addEventListener('mousedown', startDragging);
+        sliderButton.addEventListener('touchstart', startDragging);
+        
+        settingsButton.onclick = () => { settingsModal.style.display = 'flex'; };
+        closeSettingsModal.onclick = () => { settingsModal.style.display = 'none'; };
+        scoreButton.onclick = () => { displayHighscores(); scoreModal.style.display = 'flex'; };
+        closeScoreModal.onclick = () => { scoreModal.style.display = 'none'; };
+        helpButton.onclick = () => { helpModal.style.display = 'flex'; };
+        closeHelpModal.onclick = () => { helpModal.style.display = 'none'; };
+
+        window.addEventListener('click', (e) => {
+            if (e.target == settingsModal) settingsModal.style.display = 'none';
+            if (e.target == scoreModal) scoreModal.style.display = 'none';
+            if (e.target == helpModal) helpModal.style.display = 'none';
+        });
+
         document.querySelector('.precision-buttons').addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 settings.precision = parseInt(e.target.dataset.precision);
@@ -494,14 +527,11 @@
                 applySettings();
             }
         });
+        
+        document.addEventListener('DOMContentLoaded', (event) => {
+            applySettings(); 
+        });
 
-        // Highscore Logik
-        function saveHighscore(time, score) {
-            highscores.push({ time, score, date: new Date().toLocaleDateString() });
-            highscores.sort((a, b) => b.score - a.score || parseFloat(a.time) - parseFloat(b.time));
-            highscores = highscores.slice(0, 10); 
-            localStorage.setItem('stoppspielHighscores', JSON.stringify(highscores));
-        }
-
-        function displayHighscores() {
-            const list = document.getElement
+    </script>
+</body>
+</html>
