@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stopp-Spiel Final</title>
     <style>
-        /* CSS-Code beginnt hier */
+        /* --- CSS-Code beginnt hier --- */
         :root {
             --primary-color: #00ff99; /* Standard-Akzentfarbe (Grün) */
             --bg-color: #121212;
@@ -34,6 +34,10 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             width: 90%;
             max-width: 450px;
+            /* Flexbox für Layout-Stabilität */
+            display: flex; 
+            flex-direction: column;
+            gap: 20px; /* Fügt Abstand zwischen Elementen hinzu */
         }
 
         /* Obere Icon-Buttons Container */
@@ -59,7 +63,7 @@
 
         #display {
             height: 100px; 
-            margin: 30px auto; 
+            margin: 0px auto; /* Margin angepasst, da Container jetzt gap hat */
             border: 5px solid var(--primary-color); 
             border-radius: 50px; 
             display: flex; 
@@ -67,14 +71,12 @@
             align-items: center; 
             font-weight: bold;
             color: var(--primary-color);
-            
             font-size: 3.5em; 
             text-align: center; 
             white-space: nowrap; 
             padding: 0 15px; 
             box-sizing: border-box;
             overflow: hidden; 
-            
             transition: width 0.4s ease, font-size 0.3s ease; 
         }
 
@@ -85,36 +87,51 @@
         .precision-5 { width: 340px; font-size: 1.7em; } 
 
 
+        /* Container für Button/Slider, um Layout-Sprünge zu verhindern */
+        .action-area-container {
+            position: relative;
+            height: 50px; /* Feste Höhe, damit nichts springt */
+            width: 100%;
+        }
+
+        #actionButton, .slider-container {
+             /* Nehmen die volle Breite des action-area-container ein */
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-sizing: border-box;
+        }
+
         #actionButton {
             padding: 15px 30px; font-size: 1.2em; cursor: pointer;
             background-color: var(--primary-color); border: none;
-            border-radius: 50px; color: var(--card-bg); width: 100%;
-            box-sizing: border-box;
-            margin-top: 20px; 
+            border-radius: 50px; color: var(--card-bg); 
             transition: opacity 0.3s, visibility 0.3s;
+            z-index: 2; /* Über Slider */
         }
         
         #actionButton.hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none; 
-            position: absolute; 
         }
 
-        #message { margin-top: 25px; font-size: 1em; color: var(--stop-color); min-height: 1.2em; }
+        #message { font-size: 1em; color: var(--stop-color); min-height: 1.2em; margin: 0;}
 
         .slider-container {
-            display: none; 
-            width: 100%; background-color: #444; border-radius: 50px;
-            margin-top: 20px; 
-            overflow: hidden; position: relative; height: 50px;
+            display: block; /* Immer block, nur sichtbar/unsichtbar per Klasse */
+            background-color: #444; border-radius: 50px;
+            overflow: hidden; height: 50px;
             cursor: grab; user-select: none;
             opacity: 0;
-            transition: opacity 0.3s;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1;
         }
         .slider-container.visible {
             opacity: 1;
-            display: block; 
+            visibility: visible; 
         }
         
         .slider-label {
@@ -133,19 +150,22 @@
             transition: transform 0s !important; 
         }
         
-        .slider-container.dir-right .slider-button { left: 0; }
-        .slider-container.dir-left .slider-button { right: 0; }
+        /* Wichtig: Wir steuern alles nur noch mit `left` und `transform: translateX` */
+        .slider-button { left: 0; }
+        /* Bei dir-left Schieberichtung muss der Button optisch nach rechts */
+        .slider-container.dir-left .slider-button { 
+            transform: translateX(calc(100% - 50px)); /* Schiebt ihn initial ganz nach rechts */
+        }
 
-        /* --- Modal CSS --- */
+
+        /* --- Modal CSS (wie gehabt) --- */
         .modal {
-            display: none; position: fixed; z-index: 1; left: 0; top: 0;
+            display: none; position: fixed; z-index: 10; left: 0; top: 0;
             width: 100%; height: 100%; 
-            /* Halb durchsichtiger schwarzer Hintergrund */
             background-color: rgba(0, 0, 0, 0.6); 
             justify-content: center; align-items: center;
         }
         .modal-content {
-            /* Hintergrund des inneren Menüs ist wieder blickdicht */
             background-color: var(--card-bg); 
             padding: 20px; border-radius: 20px; width: 80%; max-width: 400px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
@@ -165,22 +185,14 @@
             padding: 10px; background-color: #2c2c2c; margin-bottom: 5px;
             border-radius: 20px; display: flex; justify-content: space-between;
         }
-
         .direction-buttons button, .precision-buttons button {
-            padding: 10px 15px;
-            margin: 5px 2px;
-            border: 2px solid #555;
-            background-color: #333;
-            color: var(--text-color);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            padding: 10px 15px; margin: 5px 2px; border: 2px solid #555;
+            background-color: #333; color: var(--text-color); border-radius: 20px;
+            cursor: pointer; transition: background-color 0.3s;
         }
         .direction-buttons button.active, .precision-buttons button.active {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: var(--card-bg);
-            font-weight: bold;
+            background-color: var(--primary-color); border-color: var(--primary-color);
+            color: var(--card-bg); font-weight: bold;
         }
     </style>
 </head>
@@ -196,22 +208,23 @@
         <h1>Stopp-Spiel</h1>
         <div id="display" class="precision-2">0.00s</div>
         
-        <button id="actionButton">Start</button>
-
-        <div class="slider-container" id="sliderContainer">
-            <div class="slider-button" id="sliderButton">→</div>
-            <span class="slider-label" id="sliderLabel">Zum Neustart schieben</span>
+        <!-- NEUER WRAPPER FÜR BUTTON/SLIDER -->
+        <div class="action-area-container">
+            <button id="actionButton">Start</button>
+            <div class="slider-container" id="sliderContainer">
+                <div class="slider-button" id="sliderButton">→</div>
+                <span class="slider-label" id="sliderLabel">Zum Neustart schieben</span>
+            </div>
         </div>
         
         <p id="message"></p>
     </div>
 
-    <!-- Modal Einstellungen -->
+    <!-- Modals (wie gehabt) -->
     <div id="settingsModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeSettingsModal">&times;</span>
             <h2>Einstellungen</h2>
-            
             <div class="setting-option">
                 <label>Nachkommastellen:</label>
                 <div class="precision-buttons">
@@ -222,7 +235,6 @@
                     <button data-precision="5">5</button>
                 </div>
             </div>
-
             <div class="setting-option">
                 <label>Akzentfarbe:</label>
                 <div class="color-picker-container">
@@ -232,7 +244,6 @@
                     <button data-color="#ffcc00" style="background-color: #ffcc00;"></button> <!-- Gelb -->
                 </div>
             </div>
-
             <div class="setting-option">
                 <label>Schieberichtung Neustart:</label>
                 <div class="direction-buttons">
@@ -242,19 +253,13 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal Highscores -->
     <div id="scoreModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeScoreModal">&times;</span>
             <h2>Highscores</h2>
-            <ul id="highscoreList">
-                <!-- Highscores werden hier dynamisch hinzugefügt -->
-            </ul>
+            <ul id="highscoreList"></ul>
         </div>
     </div>
-
-    <!-- Modal Hilfe -->
     <div id="helpModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeHelpModal">&times;</span>
@@ -266,9 +271,7 @@
     </div>
 
     <script>
-        // JavaScript-Code beginnt hier (Universalisiert für Maus- und Touch-Geräte)
-
-        // DOM-Elemente
+        // --- JavaScript-Code beginnt hier (Kombiniert und korrigiert) ---
         const display = document.getElementById('display');
         const actionButton = document.getElementById('actionButton');
         const sliderContainer = document.getElementById('sliderContainer');
@@ -277,8 +280,6 @@
         const messagePara = document.getElementById('message');
         const rootStyles = document.documentElement.style;
         const highscoreList = document.getElementById('highscoreList');
-        
-        // Modals und Buttons
         const settingsModal = document.getElementById('settingsModal');
         const scoreModal = document.getElementById('scoreModal');
         const helpModal = document.getElementById('helpModal');
@@ -288,7 +289,6 @@
         const closeSettingsModal = document.getElementById('closeSettingsModal');
         const closeScoreModal = document.getElementById('closeScoreModal');
         const closeHelpModal = document.getElementById('closeHelpModal');
-
 
         let startTime;
         let animationFrameId;
@@ -300,11 +300,10 @@
         };
         let highscores = JSON.parse(localStorage.getItem('stoppspielHighscores')) || [];
         
-        // --- Timer Logik ---
+        // --- Timer & Score Logik ---
         function toggleGame() {
             if (isRunning) { stopGame(); } else { startGame(); }
         }
-
         function startGame() {
             if (isRunning) return;
             isRunning = true;
@@ -314,48 +313,51 @@
             hideRestartSlider(); 
             animationFrameId = requestAnimationFrame(updateDisplayLoop);
         }
-
         function stopGame() {
             if (!isRunning) return;
             isRunning = false;
             cancelAnimationFrame(animationFrameId);
-            
             const elapsedTime = performance.now() - startTime;
-            const formattedTime = formatTime(elapsedTime, settings.precision);
-            display.textContent = formattedTime;
-
+            display.textContent = formatTime(elapsedTime, settings.precision);
             calculateScore(elapsedTime);
             showRestartSlider();
         }
-
         function updateDisplayLoop(timestamp) {
             const elapsedTime = timestamp - startTime;
             display.textContent = formatTime(elapsedTime, settings.precision);
             animationFrameId = requestAnimationFrame(updateDisplayLoop);
         }
-
         function formatTime(ms, precision) {
             const seconds = ms / 1000;
             return seconds.toFixed(precision) + 's';
         }
-
         function calculateScore(elapsedTime) {
             const seconds = elapsedTime / 1000;
             const decimalPart = seconds % 1; 
             const distanceFromTarget = Math.min(decimalPart, 1 - decimalPart);
             let score = 0;
-            let message = '';
-
-            if (distanceFromTarget < 0.005) { score = 500; message = "Perfekt! 🎉 500 Punkte!"; } 
-            else if (distanceFromTarget < 0.01) { score = 200; message = "Sehr gut! 200 Punkte!"; } 
-            else if (distanceFromTarget < 0.05) { score = 50; message = "Gut gemacht! 50 Punkte!"; } 
-            else { score = 0; message = "Versuch's nochmal!"; }
-
-            messagePara.textContent = message;
-            if (score > 0) {
-                saveHighscore(seconds.toFixed(settings.precision), score);
-            }
+            if (distanceFromTarget < 0.005) { score = 500; messagePara.textContent = "Perfekt! 🎉 500 Punkte!"; } 
+            else if (distanceFromTarget < 0.01) { score = 200; messagePara.textContent = "Sehr gut! 200 Punkte!"; } 
+            else if (distanceFromTarget < 0.05) { score = 50; messagePara.textContent = "Gut gemacht! 50 Punkte!"; } 
+            else { score = 0; messagePara.textContent = "Versuch's nochmal!"; }
+            if (score > 0) { saveHighscore(seconds.toFixed(settings.precision), score); }
         }
+        function saveHighscore(time, score) {
+            highscores.push({ time, score, date: new Date().toLocaleDateString() });
+            highscores.sort((a, b) => b.score - a.score || parseFloat(a.time) - parseFloat(b.time));
+            highscores = highscores.slice(0, 10); 
+            localStorage.setItem('stoppspielHighscores', JSON.stringify(highscores));
+        }
+        function displayHighscores() {
+            highscoreList.innerHTML = '';
+            highscores.forEach((scoreItem, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>#${index + 1} ${scoreItem.time}</span> <span>${scoreItem.score} Punkte</span>`;
+                highscoreList.appendChild(li);
+            });
+        }
+
+        // --- Einstellungs- und UI Logik ---
 
         function applySettings() {
             rootStyles.setProperty('--primary-color', settings.color);
@@ -370,12 +372,31 @@
             if (!isRunning) {
                 const currentDisplayedTime = parseFloat(display.textContent); 
                 display.textContent = formatTime(isNaN(currentDisplayedTime) ? 0 : currentDisplayedTime * 1000, settings.precision);
+                // Wichtig: Setze den Slider-Button in die korrekte Startposition basierend auf der Richtung
+                sliderButton.style.transform = ''; // CSS kümmert sich um die initiale Position (links/rechts)
             }
+
+            // Sicherstellen, dass die aktiven Buttons in den Modals korrekt angezeigt werden, nachdem Einstellungen angewendet wurden
+            updateSettingsUI();
+        }
+
+        function updateSettingsUI() {
+             document.querySelectorAll('.precision-buttons button').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.precision) === settings.precision);
+            });
+            document.querySelectorAll('.color-picker-container button').forEach(btn => {
+                 btn.classList.toggle('active', btn.dataset.color === settings.color);
+            });
+            document.querySelectorAll('.direction-buttons button').forEach(btn => {
+                 btn.classList.toggle('active', btn.dataset.direction === settings.direction);
+            });
         }
 
         function showRestartSlider() {
             actionButton.classList.add('hidden');
             sliderContainer.classList.add('visible');
+            // Beim Anzeigen des Sliders muss der Button auf 0 transform gesetzt werden, 
+            // das CSS regelt die initiale left/right Position.
             sliderButton.style.transform = 'translateX(0px)';
         }
 
@@ -390,38 +411,30 @@
             actionButton.textContent = 'Start';
             hideRestartSlider();
             messagePara.textContent = '';
+            // Setzt den Slider-Button auf die initiale Position zurück, bereit für den nächsten Stop
+            // Die applySettings() wird das transform: '' korrekt setzen, aber hier explizit für sofortigen Reset:
+            sliderButton.style.transform = 'translateX(0px)'; 
         }
 
-        function saveHighscore(time, score) {
-            highscores.push({ time, score, date: new Date().toLocaleDateString() });
-            highscores.sort((a, b) => b.score - a.score || parseFloat(a.time) - parseFloat(b.time));
-            highscores = highscores.slice(0, 10); 
-            localStorage.setItem('stoppspielHighscores', JSON.stringify(highscores));
-        }
-
-        function displayHighscores() {
-            const list = document.getElementById('highscoreList');
-            list.innerHTML = '';
-            highscores.forEach((scoreItem, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `<span>#${index + 1} ${scoreItem.time}</span> <span>${scoreItem.score} Punkte</span>`;
-                list.appendChild(li);
-            });
-        }
-
-        // --- WICHTIG: Universelle Slider/Drag-Logik für Touch und Maus ---
+        // --- Universelle Slider/Drag-Logik für Touch und Maus (Optimiert) ---
 
         let isDragging = false;
         let initialClientX; 
+        let initialButtonPos; /* Speichert die Startposition des Buttons beim Drag-Start */
         
         function getClientX(e) {
-            return e.touches ? e.touches.clientX : e.clientX;
+            return e.touches ? e.touches[0].clientX : e.clientX; /* Index 0 für den ersten Finger */
         }
 
         const startDragging = (e) => {
-            if (!isRunning) {
+            if (!isRunning && sliderContainer.classList.contains('visible')) {
                 isDragging = true;
                 initialClientX = getClientX(e); 
+                // Hol die aktuelle Transform-Position des Buttons beim Start
+                const transform = window.getComputedStyle(sliderButton).transform;
+                const matrix = new DOMMatrix(transform);
+                initialButtonPos = matrix.m41; 
+
                 sliderButton.style.transition = 'none'; 
                 document.body.style.cursor = 'grabbing';
                 e.preventDefault(); 
@@ -448,20 +461,36 @@
             const containerRect = sliderContainer.getBoundingClientRect();
             const buttonRect = sliderButton.getBoundingClientRect();
             const threshold = containerRect.width * 0.8;
-            let movedDistance;
+            
+            // Aktuelle Position nach dem Loslassen ermitteln
+            const currentTransform = window.getComputedStyle(sliderButton).transform;
+            const currentMatrix = new DOMMatrix(currentTransform);
+            const currentPos = currentMatrix.m41; 
 
-            if (settings.direction === 'right') {
-                movedDistance = buttonRect.left - containerRect.left;
-                if (movedDistance >= threshold) {
-                    resetGame();
-                }
-            } else {
-                movedDistance = containerRect.right - buttonRect.right;
-                if (movedDistance >= threshold) {
-                    resetGame();
+            // Prüfen, ob der Schwellenwert erreicht wurde
+            let successfullyDragged = false;
+            if (settings.direction === 'right' && currentPos >= threshold) {
+                successfullyDragged = true;
+            } else if (settings.direction === 'left' && currentPos <= (containerRect.width - threshold - buttonRect.width)) {
+                // Bei links ist die Logik komplexer, da wir von rechts nach links ziehen 
+                // Aber mit der universalisierten dragMove Logik oben, sollte es einfacher sein
+                // Wir prüfen einfach ob currentPos nahe 0 ist (rechts am Container)
+                if (currentPos < (containerRect.width * 0.2)) {
+                     successfullyDragged = true;
                 }
             }
+
+
+            if (successfullyDragged) {
+                 resetGame();
+            }
+            
+            // Button zurücksetzen, falls Schwellenwert nicht erreicht oder Reset nicht erfolgte
             sliderButton.style.transform = 'translateX(0px)';
+            // Falls links, muss er wieder nach rechts (initiale Position im CSS)
+            if (settings.direction === 'left') {
+                 sliderButton.style.transform = 'translateX(calc(100% - 50px))';
+            }
         };
 
         const dragMove = (e) => {
@@ -474,9 +503,12 @@
             const buttonRect = sliderButton.getBoundingClientRect();
             const maxMove = containerRect.width - buttonRect.width;
 
+            // Delta ist die Differenz zur initialen Maus/Fingerposition
             let deltaX = clientX - initialClientX;
-            let newPos = deltaX;
+
+            let newPos = initialButtonPos + deltaX;
             
+            // Klemme die Position zwischen 0 und maxMove
             newPos = Math.max(0, Math.min(maxMove, newPos));
             sliderButton.style.transform = `translateX(${newPos}px)`;
         };
@@ -485,10 +517,11 @@
         // --- Event Listener Zuweisungen ---
 
         actionButton.addEventListener('click', toggleGame); 
+        // Events an den Button binden, nicht an das Dokument für Start
         sliderButton.addEventListener('mousedown', startDragging);
         sliderButton.addEventListener('touchstart', startDragging);
         
-        settingsButton.onclick = () => { settingsModal.style.display = 'flex'; };
+        settingsButton.onclick = () => { settingsModal.style.display = 'flex'; updateSettingsUI(); };
         closeSettingsModal.onclick = () => { settingsModal.style.display = 'none'; };
         scoreButton.onclick = () => { displayHighscores(); scoreModal.style.display = 'flex'; };
         closeScoreModal.onclick = () => { scoreModal.style.display = 'none'; };
@@ -496,36 +529,20 @@
         closeHelpModal.onclick = () => { helpModal.style.display = 'none'; };
 
         window.addEventListener('click', (e) => {
-            if (e.target == settingsModal) settingsModal.style.display = 'none';
-            if (e.target == scoreModal) scoreModal.style.display = 'none';
-            if (e.target == helpModal) helpModal.style.display = 'none';
+            if (e.target == settingsModal || e.target == scoreModal || e.target == helpModal) {
+                e.target.style.display = 'none';
+            }
         });
 
+        // Event Listener für Einstellungen (Delegation)
         document.querySelector('.precision-buttons').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                settings.precision = parseInt(e.target.dataset.precision);
-                document.querySelectorAll('.precision-buttons button').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                applySettings(); 
-            }
+            if (e.target.tagName === 'BUTTON') { settings.precision = parseInt(e.target.dataset.precision); applySettings(); }
         });
-
         document.querySelector('.color-picker-container').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                settings.color = e.target.dataset.color;
-                document.querySelectorAll('.color-picker-container button').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                applySettings();
-            }
+            if (e.target.tagName === 'BUTTON') { settings.color = e.target.dataset.color; applySettings(); }
         });
-
          document.querySelector('.direction-buttons').addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                settings.direction = e.target.dataset.direction;
-                document.querySelectorAll('.direction-buttons button').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                applySettings();
-            }
+            if (e.target.tagName === 'BUTTON') { settings.direction = e.target.dataset.direction; applySettings(); }
         });
         
         document.addEventListener('DOMContentLoaded', (event) => {
